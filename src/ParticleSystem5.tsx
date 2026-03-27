@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from "react";
+import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 
@@ -215,7 +215,6 @@ const NebulaScene = ({
 			const { type, u, v, w, spinDir, spinSpeed, influence } = data;
 
 			const currentRadius = Math.sqrt(px * px + py * py + pz * pz) + 0.001;
-			const distXY = Math.sqrt(px * px + py * py) + 0.001;
 
 			const p_dist = distance / MAX_DIST;
 			const p_pinchL = pinchL / 100;
@@ -411,8 +410,8 @@ const NebulaScene = ({
 	return (
 		<points ref={pointsRef}>
 			<bufferGeometry>
-				<bufferAttribute attach="attributes-position" count={PARTICLE_COUNT} array={positions} itemSize={3} />
-				<bufferAttribute attach="attributes-color" count={PARTICLE_COUNT} array={colors} itemSize={3} />
+				<bufferAttribute attach="attributes-position" args={[positions, 3]} />
+				<bufferAttribute attach="attributes-color" args={[colors, 3]} />
 			</bufferGeometry>
 			<shaderMaterial
 				vertexShader={particleVertexShader}
