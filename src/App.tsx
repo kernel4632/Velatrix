@@ -6,6 +6,7 @@ import { NebulaScene as Scene2 } from "./ParticleSystem2";
 import { NebulaScene as Scene3 } from "./ParticleSystem3";
 import { NebulaScene as Scene4 } from "./ParticleSystem4";
 import { NebulaScene as Scene5 } from "./ParticleSystem5";
+import { NebulaScene as Scene6 } from "./ParticleSystem6";
 
 const scenes = [
 	{ component: Scene1, name: "星云 I" },
@@ -13,6 +14,7 @@ const scenes = [
 	{ component: Scene3, name: "星云 III" },
 	{ component: Scene4, name: "星云 IV" },
 	{ component: Scene5, name: "星云 V", hasAdvanced: true },
+	{ component: Scene6, name: "星云 VI", hasAdvanced: true },
 ];
 
 function App() {

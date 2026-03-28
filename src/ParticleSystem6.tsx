@@ -2,8 +2,8 @@ import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 
-const PARTICLE_COUNT = 25000;
-const MAX_DIST = 1000;
+const PARTICLE_COUNT = 40000;
+const MAX_DIST = 15;
 
 const particleVertexShader = `
   varying vec3 vColor;
@@ -64,7 +64,7 @@ const NebulaScene = ({
 		const base = [];
 
 		for (let i = 0; i < PARTICLE_COUNT; i++) {
-			const type = i % 8;
+			const type = i % 12;
 
 			const r = Math.random() * 8.0 + 2.0;
 			const theta = Math.random() * Math.PI * 2;
@@ -81,45 +81,65 @@ const NebulaScene = ({
 			let baseHue, baseSat, baseLight, influence;
 
 			if (type === 0) {
-				baseHue = 0.08 + Math.random() * 0.04;
+				baseHue = 0.95 + (Math.random() - 0.5) * 0.08;
 				baseSat = 0.9;
 				baseLight = 0.6;
-				influence = 0.3;
+				influence = 0.8;
 			} else if (type === 1) {
-				baseHue = 0.75 + Math.random() * 0.04;
+				baseHue = 0.55 + (Math.random() - 0.5) * 0.08;
 				baseSat = 0.85;
 				baseLight = 0.55;
 				influence = 1.0;
 			} else if (type === 2) {
-				baseHue = 0.95 + Math.random() * 0.04;
+				baseHue = 0.8 + (Math.random() - 0.5) * 0.08;
 				baseSat = 0.85;
 				baseLight = 0.55;
-				influence = 0.7;
+				influence = 0.9;
 			} else if (type === 3) {
-				baseHue = 0.4 + Math.random() * 0.04;
-				baseSat = 0.8;
+				baseHue = 0.35 + (Math.random() - 0.5) * 0.08;
+				baseSat = 0.85;
 				baseLight = 0.6;
-				influence = 0.5;
+				influence = 0.7;
 			} else if (type === 4) {
-				baseHue = 0.5 + Math.random() * 0.04;
+				baseHue = 0.08 + Math.random() * 0.06;
 				baseSat = 0.9;
-				baseLight = 0.65;
+				baseLight = 0.6;
 				influence = 0.9;
 			} else if (type === 5) {
-				baseHue = 0.12 + Math.random() * 0.04;
+				baseHue = 0.75 + Math.random() * 0.06;
+				baseSat = 0.85;
+				baseLight = 0.55;
+				influence = 1.0;
+			} else if (type === 6) {
+				baseHue = 0.08 + Math.random() * 0.06;
+				baseSat = 0.95;
+				baseLight = 0.5;
+				influence = 0.95;
+			} else if (type === 7) {
+				baseHue = 0.5 + Math.random() * 0.06;
+				baseSat = 0.9;
+				baseLight = 0.65;
+				influence = 0.85;
+			} else if (type === 8) {
+				baseHue = 0.12 + Math.random() * 0.06;
 				baseSat = 0.95;
 				baseLight = 0.6;
-				influence = 0.6;
-			} else if (type === 6) {
-				baseHue = 0.65 + Math.random() * 0.04;
+				influence = 0.8;
+			} else if (type === 9) {
+				baseHue = 0.65 + Math.random() * 0.06;
 				baseSat = 0.85;
 				baseLight = 0.5;
-				influence = 0.8;
-			} else {
-				baseHue = 0.15 + Math.random() * 0.04;
+				influence = 0.9;
+			} else if (type === 10) {
+				baseHue = 0.15 + Math.random() * 0.06;
 				baseSat = 0.7;
 				baseLight = 0.85;
-				influence = 0.4;
+				influence = 0.6;
+			} else {
+				baseHue = 0.4 + Math.random() * 0.06;
+				baseSat = 0.8;
+				baseLight = 0.6;
+				influence = 0.75;
 			}
 
 			const u = Math.random() * Math.PI * 2;
@@ -215,93 +235,118 @@ const NebulaScene = ({
 			const { type, u, v, w, spinDir, spinSpeed, influence } = data;
 
 			const currentRadius = Math.sqrt(px * px + py * py + pz * pz) + 0.001;
-
-			const p_dist = distance / MAX_DIST;
-			const p_pinchL = pinchL / 100;
-			const p_pinchR = pinchR / 100;
-
-			let baseX = 0,
-				baseY = 0,
-				baseZ = 0;
+			const distXY = Math.sqrt(px * px + py * py) + 0.001;
 
 			const ut = u + t * 0.15 * spinDir * spinSpeed;
 			const vt = v + t * 0.1 * spinDir * spinSpeed;
 			const wt = w + t * 0.08 * spinDir * spinSpeed;
 
+			let baseX = 0,
+				baseY = 0,
+				baseZ = 0;
+
 			if (type === 0) {
-				const p = 2.0 + p_pinchL * 5.0 + hLL * 2.0;
-				const q = 3.0 + p_pinchR * 5.0 + hLR * 2.0;
-				const r = 4.0 + Math.cos(q * ut) * (1.0 + p_dist * 2.0);
-				const tubeR = 0.2 + p_dist * 0.5;
+				const torusR = 2.0 + type * 2.0;
+				const dRingX = (px / distXY) * torusR - px;
+				const dRingY = (py / distXY) * torusR - py;
+				const dRingZ = -pz;
+				const orbitSpeed = 1.0 + type * 0.5;
+				const orbitX = -py * orbitSpeed;
+				const orbitY = px * orbitSpeed;
+				const orbitZ = Math.sin(px * 0.5 + t) * (1.0 + type);
 
-				baseX = r * Math.cos(p * ut) + tubeR * Math.cos(vt) - px;
-				baseY = r * Math.sin(p * ut) + tubeR * Math.sin(vt) - py;
-				baseZ = Math.sin(q * ut) * 4.0 + tubeR * Math.cos(vt) - pz;
+				baseX = dRingX * 1.5 + orbitX + hUL * 3.0;
+				baseY = dRingY * 1.5 + orbitY + hUR * 3.0;
+				baseZ = dRingZ * 1.5 + orbitZ + hLL * 3.0 - hLR * 3.0;
 			} else if (type === 1) {
-				const m = 1.0 + Math.floor(p_pinchL * 6.0) + Math.floor(hUL * 4.0);
-				const n = 1.0 + Math.floor(p_pinchR * 6.0) + Math.floor(hUR * 4.0);
-				const r = 5.0 + Math.sin(m * ut) * Math.cos(n * vt) * (2.0 + p_dist * 5.0);
-
-				baseX = r * Math.sin(ut) * Math.cos(vt) - px;
-				baseY = r * Math.sin(ut) * Math.sin(vt) - py;
-				baseZ = r * Math.cos(ut) - pz;
+				const repPush = (15.0 + type * 5.0) / (currentRadius + 1.0);
+				const harmonicFreq = 1.0 + type;
+				baseX = (px / currentRadius) * repPush + Math.sin(py * harmonicFreq + t * spinDir + tiltY) * 2.0 + hLL * 4.0;
+				baseY = (py / currentRadius) * repPush + Math.sin(pz * harmonicFreq + t * spinDir + tiltX) * 2.0 + hLR * 4.0;
+				baseZ = (pz / currentRadius) * repPush + Math.sin(px * harmonicFreq + t * spinDir + rollZ) * 2.0 + (hUL - hUR) * 3.0;
 			} else if (type === 2) {
-				const R = 7.0 + p_dist * 3.0 + hLL * 3.0;
-				const twists = p_pinchL * 4.0 + rollZ * 3.0;
-				const wVal = (v - Math.PI) * (0.5 + p_pinchR * 2.0);
-
-				baseX = (R + wVal * Math.cos(twists * ut)) * Math.cos(ut) - px;
-				baseY = (R + wVal * Math.cos(twists * ut)) * Math.sin(ut) - py;
-				baseZ = wVal * Math.sin(twists * ut) - pz;
+				const targetRadius = type * 1.2;
+				const shellPull = (targetRadius - currentRadius) * 2.0;
+				const aizawaX = Math.sin(py * spinDir + hLL) * 3.0 - px * 0.5;
+				const aizawaY = Math.sin(pz * spinDir + hLR) * 3.0 - py * 0.5;
+				const aizawaZ = Math.sin(px * spinDir + hUL) * 3.0 - pz * 0.5;
+				baseX = (px / currentRadius) * shellPull + aizawaX * (0.5 + type * 0.2) + tiltX * 5.0;
+				baseY = (py / currentRadius) * shellPull + aizawaY * (0.5 + type * 0.2) + tiltY * 5.0;
+				baseZ = (pz / currentRadius) * shellPull + aizawaZ * (0.5 + type * 0.2) + rollZ * 5.0;
 			} else if (type === 3) {
-				const a = 1.0 + p_pinchL * 3.0 + tiltX * 2.0;
-				const b = 2.0 + p_pinchR * 2.0 + tiltY * 2.0;
-				const c = 3.0 + p_dist * 2.0;
-				const A = 8.0 + p_dist * 4.0;
+				const p = 2.0 + pL * 8.0 + hLL * 4.0;
+				const q = 3.0 + pR * 8.0 + hLR * 4.0;
+				const r = 4.0 + Math.cos(q * ut) * (1.0 + prox * 4.0);
+				const tubeR = 0.2 + prox * 1.0;
 
-				baseX = A * Math.sin(a * ut + v) - px;
-				baseY = A * Math.sin(b * ut + v) - py;
-				baseZ = A * Math.cos(c * ut + v) - pz;
+				baseX = r * Math.cos(p * ut) + tubeR * Math.cos(vt) - px + pitchX * 6.0;
+				baseY = r * Math.sin(p * ut) + tubeR * Math.sin(vt) - py + pitchX * 6.0;
+				baseZ = Math.sin(q * ut) * 4.0 + tubeR * Math.cos(vt) - pz + (hUL + hUR) * 3.0;
 			} else if (type === 4) {
-				const sigma = 10.0 + p_pinchL * 10.0 + hUL * 5.0;
-				const beta = 8.0 / 3.0 + p_pinchR * 4.0 + hUR * 2.0;
-				const rho = 28.0 + p_dist * 14.0 + pitchX * 10.0;
+				const m = 1.0 + Math.floor(pL * 10.0) + Math.floor(hUL * 6.0);
+				const n = 1.0 + Math.floor(pR * 10.0) + Math.floor(hUR * 6.0);
+				const r = 5.0 + Math.sin(m * ut) * Math.cos(n * vt) * (2.0 + prox * 8.0);
 
-				baseX = sigma * (py - px) - px;
-				baseY = px * (rho - pz) - py;
-				baseZ = px * py - beta * pz - pz * 0.1;
+				baseX = r * Math.sin(ut) * Math.cos(vt) - px + tiltX * 4.0;
+				baseY = r * Math.sin(ut) * Math.sin(vt) - py + tiltY * 4.0;
+				baseZ = r * Math.cos(ut) - pz + rollZ * 4.0;
 			} else if (type === 5) {
+				const R = 7.0 + prox * 5.0 + hLL * 5.0;
+				const twists = pL * 6.0 + rollZ * 5.0;
+				const wVal = (v - Math.PI) * (0.5 + pR * 4.0);
+
+				baseX = (R + wVal * Math.cos(twists * ut)) * Math.cos(ut) - px + hUL * 4.0;
+				baseY = (R + wVal * Math.cos(twists * ut)) * Math.sin(ut) - py + hUR * 4.0;
+				baseZ = wVal * Math.sin(twists * ut) - pz + pitchX * 5.0;
+			} else if (type === 6) {
+				const a = 1.0 + pL * 5.0 + tiltX * 4.0;
+				const b = 2.0 + pR * 4.0 + tiltY * 4.0;
+				const c = 3.0 + prox * 4.0;
+				const A = 8.0 + prox * 6.0;
+
+				baseX = A * Math.sin(a * ut + v) - px + hLL * 5.0;
+				baseY = A * Math.sin(b * ut + v) - py + hLR * 5.0;
+				baseZ = A * Math.cos(c * ut + v) - pz + (hUL - hUR) * 4.0;
+			} else if (type === 7) {
+				const sigma = 10.0 + pL * 15.0 + hUL * 8.0;
+				const beta = 8.0 / 3.0 + pR * 6.0 + hUR * 4.0;
+				const rho = 28.0 + prox * 20.0 + pitchX * 15.0;
+
+				baseX = sigma * (py - px) - px + tiltX * 5.0;
+				baseY = px * (rho - pz) - py + tiltY * 5.0;
+				baseZ = px * py - beta * pz - pz * 0.1 + rollZ * 5.0;
+			} else if (type === 8) {
 				const phi = (Math.sqrt(5) + 1) / 2;
-				const spiralFactor = 2.0 + p_pinchL * 3.0 + hLL * 2.0;
-				const rFib = ((i % 1000) / 1000.0) * (5.0 + p_dist * 3.0);
+				const spiralFactor = 2.0 + pL * 5.0 + hLL * 4.0;
+				const rFib = ((i % 1000) / 1000.0) * (5.0 + prox * 5.0);
 				const angle = (i % 1000) * phi * Math.PI * 2 * spiralFactor;
 
-				baseX = rFib * Math.cos(angle + wt) - px;
-				baseY = rFib * Math.sin(angle + wt) - py;
-				baseZ = ((i % 100) - 50) * 0.1 * (1.0 + p_pinchR) + hLR * 2.0 - pz;
-			} else if (type === 6) {
-				const a_ross = 0.2 + p_pinchL * 0.3 + hUL * 0.2;
-				const b_ross = 0.2 + p_pinchR * 0.3 + hUR * 0.2;
-				const c_ross = 5.0 + p_dist * 3.0 + pitchX * 2.0;
+				baseX = rFib * Math.cos(angle + wt) - px + hUL * 4.0;
+				baseY = rFib * Math.sin(angle + wt) - py + hUR * 4.0;
+				baseZ = ((i % 100) - 50) * 0.1 * (1.0 + pR) + hLR * 4.0 - pz;
+			} else if (type === 9) {
+				const a_ross = 0.2 + pL * 0.5 + hUL * 0.4;
+				const b_ross = 0.2 + pR * 0.5 + hUR * 0.4;
+				const c_ross = 5.0 + prox * 5.0 + pitchX * 4.0;
 
-				baseX = -py - pz - px * 0.1;
-				baseY = px + a_ross * py - px * 0.1;
-				baseZ = b_ross + pz * (px - c_ross) - pz * 0.1;
-			} else {
-				const R1 = 6.0 + p_pinchL * 4.0 + hLL * 3.0;
-				const R2 = 2.0 + p_pinchR * 3.0 + hLR * 2.0;
-				const r = R1 + R2 * Math.cos(vt) + (hUL - hUR) * 2.0;
+				baseX = -py - pz - px * 0.1 + tiltX * 4.0;
+				baseY = px + a_ross * py - px * 0.1 + tiltY * 4.0;
+				baseZ = b_ross + pz * (px - c_ross) - pz * 0.1 + rollZ * 4.0;
+			} else if (type === 10) {
+				const R1 = 6.0 + pL * 8.0 + hLL * 5.0;
+				const R2 = 2.0 + pR * 6.0 + hLR * 4.0;
+				const r = R1 + R2 * Math.cos(vt) + (hUL - hUR) * 4.0;
 				const omega = 1.0 + spinSpeed * 0.5;
 
-				baseX = r * Math.cos(omega * ut) - px;
-				baseY = r * Math.sin(omega * ut) - py;
-				baseZ = R2 * Math.sin(vt) + pitchX * 3.0 - pz;
+				baseX = r * Math.cos(omega * ut) - px + pitchX * 5.0;
+				baseY = r * Math.sin(omega * ut) - py + pitchX * 5.0;
+				baseZ = R2 * Math.sin(vt) + rollZ * 5.0 - pz;
+			} else {
+				const freq = data.freq * 0.2;
+				baseX = Math.sin(py * freq + t * spinDir * spinSpeed + tiltY) * Math.cos(pz * freq) * 3.0 + hLL * 3.0;
+				baseY = Math.sin(pz * freq + t * spinDir * spinSpeed + tiltX) * Math.cos(px * freq) * 3.0 + hLR * 3.0;
+				baseZ = Math.sin(px * freq + t * spinDir * spinSpeed + rollZ) * Math.cos(py * freq) * 3.0 + (hUL - hUR) * 3.0;
 			}
-
-			const freq = data.freq * 0.2;
-			const noiseX = Math.sin(py * freq + t * spinDir * spinSpeed + tiltY) * Math.cos(pz * freq);
-			const noiseY = Math.sin(pz * freq + t * spinDir * spinSpeed + tiltX) * Math.cos(px * freq);
-			const noiseZ = Math.sin(px * freq + t * spinDir * spinSpeed + rollZ) * Math.cos(py * freq);
 
 			const torusR = 4.0 + type * 1.0;
 			const tiltAngleX = tiltX * Math.PI * 0.5;
@@ -319,7 +364,7 @@ const NebulaScene = ({
 			const orbitSpeed = (1.0 + type * 0.4) * spinDir * spinSpeed;
 			const orbitX = -rotatedY * orbitSpeed;
 			const orbitY = rotatedX * orbitSpeed;
-			const orbitZ = Math.sin(rotatedX * 0.5 + t * spinDir) * (1.0 + type) + pitchX * 2.0;
+			const orbitZ = Math.sin(rotatedX * 0.5 + t * spinDir) * (1.0 + type) + pitchX * 3.0;
 
 			const unrotX = orbitX * Math.cos(-tiltAngleY) + orbitZ * Math.sin(-tiltAngleY);
 			const unrotZ = -orbitX * Math.sin(-tiltAngleY) + orbitZ * Math.cos(-tiltAngleY);
@@ -336,8 +381,8 @@ const NebulaScene = ({
 			const repY = (py / currentRadius) * repPush + Math.sin(pz * harmonicFreq + t * spinDir + tiltX) * 2.0;
 			const repZ = (pz / currentRadius) * repPush + Math.sin(px * harmonicFreq + t * spinDir + rollZ) * 2.0;
 
-			const targetRadius = type * 1.0;
-			const shellPull = (targetRadius - currentRadius) * 2.0;
+			const colTargetRadius = type * 1.0;
+			const shellPull = (colTargetRadius - currentRadius) * 2.0;
 			const aizawaX = Math.sin(py * spinDir + hLL) * 3.0 - px * 0.5;
 			const aizawaY = Math.sin(pz * spinDir + hLR) * 3.0 - py * 0.5;
 			const aizawaZ = Math.sin(px * spinDir + hUL) * 3.0 - pz * 0.5;
@@ -345,24 +390,24 @@ const NebulaScene = ({
 			const colY = (py / currentRadius) * shellPull + aizawaY * (0.5 + type * 0.15);
 			const colZ = (pz / currentRadius) * shellPull + aizawaZ * (0.5 + type * 0.15);
 
-			const forceScale = 0.0006 * (1.0 + shockwave * 5.0);
-			const mathStrength = 0.006 * influence;
+			const forceScale = 0.001 * (1.0 + shockwave * 5.0);
+			const mathStrength = 0.01 * influence;
 
-			const fx = (noiseX * w_neutral + fusX * w_fusion + repX * w_repel + colX * w_collapse) * forceScale + baseX * mathStrength * w_neutral;
-			const fy = (noiseY * w_neutral + fusY * w_fusion + repY * w_repel + colY * w_collapse) * forceScale + baseY * mathStrength * w_neutral;
-			const fz = (noiseZ * w_neutral + fusZ * w_fusion + repZ * w_repel + colZ * w_collapse) * forceScale + baseZ * mathStrength * w_neutral;
+			const fx = (baseX * 0.3 + fusX * w_fusion + repX * w_repel + colX * w_collapse) * forceScale + baseX * mathStrength * w_neutral;
+			const fy = (baseY * 0.3 + fusY * w_fusion + repY * w_repel + colY * w_collapse) * forceScale + baseY * mathStrength * w_neutral;
+			const fz = (baseZ * 0.3 + fusZ * w_fusion + repZ * w_repel + colZ * w_collapse) * forceScale + baseZ * mathStrength * w_neutral;
 
 			vx += fx;
 			vy += fy;
 			vz += fz;
 
-			const friction = 0.97;
+			const friction = 0.96;
 			vx *= friction;
 			vy *= friction;
 			vz *= friction;
 
 			const speed = Math.sqrt(vx * vx + vy * vy + vz * vz);
-			const maxSpeed = 0.18 + shockwave * 0.25;
+			const maxSpeed = 0.25 + shockwave * 0.3 + w_fusion * 0.15 + w_repel * 0.1;
 			if (speed > maxSpeed) {
 				vx = (vx / speed) * maxSpeed;
 				vy = (vy / speed) * maxSpeed;
@@ -388,15 +433,15 @@ const NebulaScene = ({
 
 			const speedSq = vx * vx + vy * vy + vz * vz;
 
-			let h = data.baseHue + w_fusion * 0.1 - w_collapse * 0.1 + w_repel * 0.15 + (hLL - hLR) * 0.1;
+			let h = data.baseHue + w_fusion * 0.15 - w_collapse * 0.15 + w_repel * 0.2 + (hLL - hLR) * 0.15 + (hUL - hUR) * 0.1;
 			h = Math.abs(h % 1.0);
 
-			const s_color = data.baseSat * (0.8 + speedSq * 10.0);
-			const l = data.baseLight * (0.15 + w_fusion * 0.1 + w_collapse * 0.1 + speedSq * 3.0 + shockwave * 0.2);
+			const s_color = data.baseSat * (0.8 + speedSq * 15.0);
+			const l = data.baseLight * (0.15 + w_fusion * 0.15 + w_collapse * 0.15 + speedSq * 4.0 + shockwave * 0.3);
 
 			tempColor.setHSL(h, Math.min(1.0, s_color), Math.min(1.0, l));
 
-			const intensity = 0.3 + speedSq * 80.0 + w_collapse * 0.5 + w_fusion * 0.5 + shockwave * 2.0 + Math.sin(t * 2.0 + data.glowOffset) * 0.2 + influence * 0.3;
+			const intensity = 0.3 + speedSq * 100.0 + w_collapse * 0.8 + w_fusion * 0.8 + shockwave * 3.0 + Math.sin(t * 2.0 + data.glowOffset) * 0.3 + influence * 0.5;
 
 			col[i3] = tempColor.r * intensity;
 			col[i3 + 1] = tempColor.g * intensity;
